@@ -1,0 +1,38 @@
+FROM stereolabs/zed:4.0-devel-cuda11.8-ubuntu20.04
+
+RUN apt-get update -y || true && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata curl && \
+    sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' && \
+    curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add - && \
+    apt-get update || true &&\
+    DEBIAN_FRONTEND=noninteractive apt-get install -y ros-noetic-desktop-full build-essential cmake usbutils libusb-1.0-0-dev git -y --allow-unauthenticated
+    
+RUN apt-get install -y python3-rosdep python3-rosinstall  python3-rosinstall-generator python3-wstool 
+RUN apt install python3-rosdep
+RUN rosdep init
+RUN rosdep update
+
+RUN mkdir -p /opt/ros_ws/src
+WORKDIR /opt/ros_ws/src
+
+RUN git clone --recursive https://github.com/stereolabs/zed-ros-wrapper.git
+
+WORKDIR /opt/ros_ws/
+RUN rosdep install --from-paths src --ignore-src -r -y
+RUN .  /opt/ros/noetic/setup.sh && catkin_make -DCMAKE_BUILD_TYPE=Release
+
+
+# Installing Realsense camera package 
+
+RUN apt-get install -y ros-noetic-realsense2-camera
+
+# Velodyne packages 
+
+RUN mkdir -p /opt/velodyne_ws/src
+WORKDIR /opt/velodyne_ws/src
+
+RUN git clone https://github.com/ros-drivers/velodyne.git
+
+WORKDIR /opt/velodyne_ws/
+RUN rosdep install --from-paths src --ignore-src -r -y
+RUN .  /opt/ros/noetic/setup.sh && catkin_make 
