@@ -15,6 +15,7 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image, Imu
 from nav_msgs.msg import Odometry, Path
 from cv_bridge import CvBridge, CvBridgeError
+import os
 
 class Dataset_Subscriber:
 	def __init__(self):
@@ -121,9 +122,12 @@ class Dataset_Subscriber:
 				# print("Label Vector = ", self.label)
 
 				# Save dataset
-				cv2.imwrite("/home/adarshjs/catkin_ws/src/terrapn/dataset/" + self.surface_name + "/" + str(self.iter) + ".png", cv_image)
-				np.save("/home/adarshjs/catkin_ws/src/terrapn/dataset/" + self.surface_name + "/" + "input_velocity_" + str(self.iter) + ".npy", self.vels)
-				np.save("/home/adarshjs/catkin_ws/src/terrapn/dataset/" + self.surface_name + "/" +"label_" + str(self.iter) + ".npy", self.label)
+				path = "./labeled_dataset"
+				if not os.path.exists(path):
+					os.mkdir(path)
+				cv2.imwrite(path + "/" + str(self.iter) + ".png", cv_image)
+				np.save(path + "/" + "input_velocity_" + str(self.iter) + ".npy", self.vels)
+				np.save(path + "/" +"label_" + str(self.iter) + ".npy", self.label)
 
 
 
