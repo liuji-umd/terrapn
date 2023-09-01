@@ -44,42 +44,5 @@ RUN conda env create -f terrapn.yml
 RUN conda init
 
 
-# Setting up GUI access
-# Install required packages
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      bash \
-      fluxbox \
-      git \
-      net-tools \
-      novnc \
-      supervisor \
-      x11vnc \
-      xterm \
-      xvfb && \
-    rm -rf /var/lib/apt/lists/*
-# Create configuration directory for Supervisor
-RUN mkdir -p /app/conf.d
-# Create the Supervisor configuration file
-RUN echo '[supervisord]\nnodaemon=true\n\n[include]\nfiles = /app/conf.d/*.conf' > /app/supervisord.conf
-# Create individual service configurations
-RUN echo '[program:fluxbox]\ncommand=fluxbox\nautorestart=true' > /app/conf.d/fluxbox.conf
-RUN echo '[program:websockify]\ncommand=websockify --web /usr/share/novnc 8080 localhost:5900\nautorestart=true' > /app/conf.d/websockify.conf
-RUN echo '[program:x11vnc]\ncommand=x11vnc -forever -shared\nautorestart=true' > /app/conf.d/x11vnc.conf
-RUN echo '[program:xvfb]\ncommand=Xvfb :0 -screen 0 "%(ENV_DISPLAY_WIDTH)s"x"%(ENV_DISPLAY_HEIGHT)s"x24 -listen tcp -ac\nautorestart=true' > /app/conf.d/xvfb.conf
-# Setup demo environment variables
-ENV HOME=/root \
-    LANG=en_US.UTF-8 \
-    LANGUAGE=en_US.UTF-8 \
-    LC_ALL=C.UTF-8 \
-    DISPLAY=:0.0 \
-    DISPLAY_WIDTH=1024 \
-    DISPLAY_HEIGHT=768 \
-    RUN_XTERM=yes \
-    RUN_FLUXBOX=yes
-# Embed the entrypoint logic
-CMD if [ "$RUN_FLUXBOX" = "no" ] || [ "$RUN_FLUXBOX" = "false" ] || [ "$RUN_FLUXBOX" = "n" ] || [ "$RUN_FLUXBOX" = "0" ]; then rm -f /app/conf.d/fluxbox.conf; fi && \
-    if [ "$RUN_XTERM" = "no" ] || [ "$RUN_XTERM" = "false" ] || [ "$RUN_XTERM" = "n" ] || [ "$RUN_XTERM" = "0" ]; then rm -f /app/conf.d/xterm.conf; fi && \
-    exec supervisord -c /app/supervisord.conf
-# Expose the necessary port
-EXPOSE 8080
+
+
