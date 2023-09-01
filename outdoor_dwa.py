@@ -111,7 +111,7 @@ class Config():
         self.divided_patch_list = []
 
         # Load trained model
-        self.model_lst = "Weights-047--0.40830.hdf5"
+        self.model_lst = "./model/Weights-047--0.40830.hdf5"
         self.model = load_model(self.model_lst)
         print("Finished Loading Model!")
 
@@ -808,6 +808,9 @@ def main():
     subGoal = rospy.Subscriber('/target/position', Twist, config.target_callback)
     subImage = rospy.Subscriber(config.image_topic_name, Image, config.img_callback)
     goal_state_pub = rospy.Publisher('/goal_state_pub', Bool, queue_size=10)
+    cost_map_publisher = rospy.Publisher('/terrapn_costmap', Image, queue_size=10)
+    publish_cost_map = True
+    bridge = CvBridge()
 
     pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
     # pub = rospy.Publisher('/husky/cmd_vel_DWA', Twist, queue_size=1)
@@ -920,7 +923,15 @@ def main():
 
                 # cv2.imshow("Input image", config.cropped_img)
                 # cv2.imshow("Prediction", cost_map)
-                cv2.waitKey(1)
+                # cv2.waitKey(1)
+
+                # Publish cost_map on a topic
+                if publish_cost_map:
+                    cost_map_image = (cost_map-cost_map.min())/(cost_map.max()-cost_map.min())*256**2
+                    cost_map_image = cost_map_image.astype(np.uint16)
+                    image_message = bridge.cv2_to_imgmsg(cost_map_image, encoding="passthrough")
+                    cost_map_publisher.publish(image_message)
+
 
                 u = dwa_control(x, u, config, obs.obst, cost_map)
                 x[0] = config.x
