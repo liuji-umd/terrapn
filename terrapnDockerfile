@@ -16,6 +16,7 @@ RUN rosdep init
 RUN locale-gen en_US.UTF-8
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
 RUN rosdep update
+RUN echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
 
 RUN apt-get install -y git
 RUN apt-get install wget
@@ -42,6 +43,8 @@ WORKDIR /opt/terrapn_ws/src/terrapn/conda
 RUN conda env create -f terrapn.yml
 
 RUN conda init
+ENV PYTHONPATH="/opt/terrapn_ws/src/terrapn/model/"
+
 
 
 
