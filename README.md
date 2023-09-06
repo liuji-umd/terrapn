@@ -17,3 +17,20 @@ This is the main working code and model for TerraPN, the paper found here: https
 * The training code, and associated txt files needed to read the dataset can be found in the model folder along with the network model.
 
 * Our dataset to train a new model can be found [here](https://drive.google.com/file/d/1_FLILRz9FmYFFfTTeis_VSnhAXzIEHV3/view?usp=drive_link).
+* 
+
+# To build the docker container
+0. Go to the terrapn package
+1. Please install Nvidia container runtime if it is not already installed [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/nvidia-docker.html)
+2. Run the following command 
+```
+sudo docker build -t terrapn -f terrapnDockerfile .
+```
+
+# To run the docker 
+0. Run the following command
+```
+sudo docker run -it --net=host --runtime=nvidia --gpus=all terrapn
+```
+
+
