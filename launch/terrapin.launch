@@ -1,0 +1,11 @@
+<launch>
+    <!-- Required arguments-->
+    <arg name="robot_name" default="jackal"/>
+    <arg name="algorithm" default="accurate"/>
+
+    <!-- Terrapn Node -->
+    <node name="outdoor_dwa" type="outdoor_dwa.py" pkg="terrapn" output="screen">
+        <param name="robot_name" value="$(arg robot_name)" />
+        <param name="algorithm" value="$(arg algorithm)" />
+    </node>
+</launch>
