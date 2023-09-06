@@ -36,6 +36,8 @@ WORKDIR /opt/terrapn_ws/src
 # RUN git clone https://github.com/Inception-Robotics/terrapn.git
 RUN git clone https://github.com/liuji-umd/terrapn.git
 RUN git clone https://github.com/Inception-Robotics/performance_metric.git
+# create folder to store metric data
+RUN mkdir -p /metric_data 
 
 WORKDIR /opt/terrapn_ws/
 RUN rosdep install --from-paths src --ignore-src -r -y
