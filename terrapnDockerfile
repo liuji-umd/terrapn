@@ -33,7 +33,9 @@ RUN bash Miniconda3* -b
 RUN mkdir -p /opt/terrapn_ws/src
 WORKDIR /opt/terrapn_ws/src
 
-RUN git clone https://github.com/Inception-Robotics/terrapn.git
+# RUN git clone https://github.com/Inception-Robotics/terrapn.git
+RUN git clone https://github.com/liuji-umd/terrapn.git
+RUN git clone https://github.com/Inception-Robotics/performance_metric.git
 
 WORKDIR /opt/terrapn_ws/
 RUN rosdep install --from-paths src --ignore-src -r -y

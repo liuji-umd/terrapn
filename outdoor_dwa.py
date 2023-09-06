@@ -92,8 +92,19 @@ class Config():
         self.x = 0.0
         self.y = 0.0
         self.z = 0.0
-        self.goalX = 0
-        self.goalY = 0
+
+        # use preset goal position defined in the trial_param.yaml file
+        self.use_preset_goal = rospy.get_param("/outdoor_dwa/use_preset_goal",False)
+        if self.use_preset_goal:
+            # defined in the trial_param.yaml under the metric_calculator package
+            # this will set the goal xy at the beginning of the trial, so not updated
+            # through the original subscriber callback
+            goal_pos = rospy.get_param("goal_pos",[0.0,0.0])
+            self.goalX = goal_pos[0]
+            self.goalY = goal_pos[1]
+        else:
+            self.goalX = 0
+            self.goalY = 0
         self.th = 0.0
         self.r = rospy.Rate(20)
 
@@ -133,8 +144,8 @@ class Config():
         print("Finished Loading Model!")
 
         # Topic names
-        self.odom_topic_name = "/odometry/filtered"
-        self.image_topic_name="/camera/color/image_raw"
+        self.odom_topic_name = rospy.get_param("/outdoor_dwa/odom_topic_name","/odometry/filtered")
+        self.image_topic_name= rospy.get_param("/outdoor_dwa/cam_topic_name","/camera/color/image_raw")
         # self.image_topic_name = "/zed2i/zed_node/left_raw/image_raw_color"
 
         self.camera_tilt_angle = -30

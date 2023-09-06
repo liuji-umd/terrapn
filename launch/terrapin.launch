@@ -2,10 +2,21 @@
     <!-- Required arguments-->
     <arg name="robot_name" default="jackal"/>
     <arg name="algorithm" default="accurate"/>
+    <arg name="use_preset_goal" default="true"/>
+    <arg name="cam_topic_name" default="/camera/color/image_raw"/>
+    <arg name="odom_topic_name" default="/odometry/filtered" />
+    <arg name="trial_param_path" default="$(find metric_calculator)/config/trial_param.yaml" />
+
+    <include file="$(find metric_calculator)/launch/metric.launch">
+      <arg name="trial_param_path" value="$(arg trial_param_path)" />
+    </include>
 
     <!-- Terrapn Node -->
     <node name="outdoor_dwa" type="outdoor_dwa.py" pkg="terrapn" output="screen">
         <param name="robot_name" value="$(arg robot_name)" />
         <param name="algorithm" value="$(arg algorithm)" />
+        <param name="use_preset_goal" value="$(arg use_preset_goal)" />
+        <param name="cam_topic_name" value="$(arg cam_topic_name)" />
+        <param name="odom_topic_name" value="$(arg odom_topic_name)" />
     </node>
 </launch>
