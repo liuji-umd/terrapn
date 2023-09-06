@@ -33,12 +33,6 @@ RUN bash Miniconda3* -b
 RUN mkdir -p /opt/terrapn_ws/src
 WORKDIR /opt/terrapn_ws/src
 
-WORKDIR /opt/terrapn_ws/src/terrapn/conda
-RUN conda env create -f terrapn.yml
-
-RUN conda init
-ENV PYTHONPATH="/opt/terrapn_ws/src/terrapn/model/"
-
 # RUN git clone https://github.com/Inception-Robotics/terrapn.git
 RUN git clone https://github.com/liuji-umd/terrapn.git
 RUN git clone https://github.com/Inception-Robotics/performance_metric.git
@@ -48,6 +42,12 @@ RUN mkdir -p /metric_data
 WORKDIR /opt/terrapn_ws/
 RUN rosdep install --from-paths src --ignore-src -r -y
 RUN .  /opt/ros/melodic/setup.sh && catkin_make 
+
+WORKDIR /opt/terrapn_ws/src/terrapn/conda
+RUN conda env create -f terrapn.yml
+
+RUN conda init
+ENV PYTHONPATH="/opt/terrapn_ws/src/terrapn/model/"
 
 
 
