@@ -43,6 +43,7 @@ from sklearn.model_selection import train_test_split
 from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
 import scipy.misc
+import rospkg
 
 
 class Config():
@@ -52,17 +53,32 @@ class Config():
         #NOTE good params:
         #NOTE 0.55,0.1,1.0,1.6,3.2,0.15,0.05,0.1,1.7,2.4,0.1,3.2,0.18
         # self.bridge = CvBridge()
-        self.max_speed = 0.5#0.6  # [m/s]
-        self.min_speed = 0.0  # [m/s]
-        self.max_yawrate = 0.5#0.6  # [rad/s]
-        self.max_accel = 2.5  # [m/ss]
-        self.max_dyawrate = 3.2  # [rad/ss]
-        self.v_reso = 0.05 # [m/s]
-        self.yawrate_reso = 0.1  # [rad/s]
-        self.dt = 0.5  # [s]
-        self.predict_time = 1.5  # [s]
-        self.time_reso = 0.02
-        self.upper_cost_threshold = 0.25
+        self.robot_name = rospy.get_param('/outdoor_dwa/robot_name', "jackal")
+        if self.robot_name == "husky":
+            self.max_speed = 0.5#0.6  # [m/s]
+            self.min_speed = 0.0  # [m/s]
+            self.max_yawrate = 0.5#0.6  # [rad/s]
+            self.max_accel = 2.5  # [m/ss]
+            self.max_dyawrate = 3.2  # [rad/ss]
+            self.v_reso = 0.05 # [m/s]
+            self.yawrate_reso = 0.1  # [rad/s]
+            self.dt = 0.5  # [s]
+            self.predict_time = 1.5  # [s]
+            self.time_reso = 0.02
+            self.upper_cost_threshold = 0.25
+
+        elif self.robot_name == "jackal":
+            self.max_speed = 0.5#0.6  # [m/s]
+            self.min_speed = 0.0  # [m/s]
+            self.max_yawrate = 0.5#0.6  # [rad/s]
+            self.max_accel = 1.0  # [m/ss]
+            self.max_dyawrate = 3.2  # [rad/ss]
+            self.v_reso = 0.2 # [m/s]
+            self.yawrate_reso = 0.2  # [rad/s]
+            self.dt = 0.5  # [s]
+            self.predict_time = 1.5  # [s]
+            self.time_reso = 0.02
+            self.upper_cost_threshold = 0.25
 
         self.vel_limit = self.max_speed
         self.yawrate_limit = self.max_yawrate
@@ -111,7 +127,8 @@ class Config():
         self.divided_patch_list = []
 
         # Load trained model
-        self.model_lst = "./model/Weights-047--0.40830.hdf5"
+        rospack = rospkg.RosPack()
+        self.model_lst = rospack.get_path('terrapn') + "/model/Weights-047--0.40830.hdf5"
         self.model = load_model(self.model_lst)
         print("Finished Loading Model!")
 
@@ -823,6 +840,7 @@ def main():
 
     reached = False
     reached_goal = 0
+    algorithm_type = rospy.get_param('/outdoor_dwa/algorithm', "accurate")
 
 
     # runs until terminated externally
@@ -843,19 +861,23 @@ def main():
             for j in range(0, config.resized_img.shape[0]- config.stride+1, config.stride):
                 for i in range(0, config.resized_img.shape[1]-config.stride+1, config.stride):
                     # config.cropped_list.append(resized_img[j:j + config.patch_side, i:i + config.patch_side])
+                    if algorithm_type == "accurate":
+                        # Condition based on number of white pixels and black pixels (TODO)
+                        if(np.count_nonzero(segmented_img[j:j + config.patch_side, i:i + config.patch_side]) < 0.5*config.patch_side*config.patch_side): 
+                            sp1, sp2, sp3, sp4 = divide_patch(config.resized_img[j:j + config.patch_side, i:i + config.patch_side])
+                            config.cropped_list.append(sp1)
+                            config.cropped_list.append(sp2)
+                            config.cropped_list.append(sp3)
+                            config.cropped_list.append(sp4)
+                            config.divided_patch_list.append(patch_counter)
+                            patch_counter = patch_counter + 4
+                            # print("Patch number = ", patch_counter)
 
-                    # Condition based on number of white pixels and black pixels (TODO)
-                    if(np.count_nonzero(segmented_img[j:j + config.patch_side, i:i + config.patch_side]) < 0.5*config.patch_side*config.patch_side): 
-                        sp1, sp2, sp3, sp4 = divide_patch(config.resized_img[j:j + config.patch_side, i:i + config.patch_side])
-                        config.cropped_list.append(sp1)
-                        config.cropped_list.append(sp2)
-                        config.cropped_list.append(sp3)
-                        config.cropped_list.append(sp4)
-                        config.divided_patch_list.append(patch_counter)
-                        patch_counter = patch_counter + 4
-                        # print("Patch number = ", patch_counter)
-
-                    else:
+                        else:
+                            config.cropped_list.append(config.resized_img[j:j + config.patch_side, i:i + config.patch_side])
+                            patch_counter = patch_counter + 1
+                    
+                    elif algorithm_type == "fast":
                         config.cropped_list.append(config.resized_img[j:j + config.patch_side, i:i + config.patch_side])
                         patch_counter = patch_counter + 1
 
