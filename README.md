@@ -33,4 +33,10 @@ sudo docker build -t terrapn -f terrapnDockerfile .
 sudo docker run -it --net=host --runtime=nvidia --gpus=all terrapn
 ```
 
+# Extracting Labels
+```
+python scripts/dataset_preparation.py /path/to/bagfile --show
 
+Without Images - 
+python scripts/dataset_preparation.py /path/to/bagfile
+```

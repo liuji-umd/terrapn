@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+import subprocess
+import threading
+import argparse
+
 import roslib
 # roslib.load_manifest('terrapn')
 import sys
@@ -18,18 +22,23 @@ from cv_bridge import CvBridge, CvBridgeError
 import os
 
 class Dataset_Subscriber:
-	def __init__(self):
+	def __init__(self, bag_file_path, show_images):
 		self.bridge = CvBridge()
+		self.show_images = show_images
+		self.bag_file_path = bag_file_path
+		self.dataset_path = os.path.expanduser("~/inception/labeled_dataset")
+		if not os.path.exists(self.dataset_path):
+			os.makedirs(self.dataset_path)
+		
 		self.img_topic_name = "/camera/color/image_raw"
 		self.imu_topic_name = "/imu/data_raw"
 		self.odom_topic_name = "/odometry/filtered"
 		self.gt_topic_name = "/laser_odom_to_init"
 		
-		# self.surface_name = "red_tiles"
-		# self.surface_name = "smooth_tiles"
-		# self.surface_name = "grass"
-		# self.surface_name = "leaves"
-		self.surface_name = "asphalt"
+		# Run the rosbag play command in a separate thread
+		self.stop_thread = False
+		self.rosbag_thread = threading.Thread(target=self.run_rosbag)
+		self.rosbag_thread.start()
 
 		# Topic names
 		self.image_sub = rospy.Subscriber(self.img_topic_name, Image, self.img_callback)
@@ -71,11 +80,17 @@ class Dataset_Subscriber:
 		self.yaw_diff = []
 		self.vels2 = []
 		
-		
-
 		self.t1 = time.time()
 		print("Constructor Done for v2!")
 
+	def run_rosbag(self):
+		self.rosbag_process = subprocess.Popen(["rosbag", "play", self.bag_file_path])
+		self.rosbag_process.wait()
+
+		if not self.stop_thread:  # Check if the thread was manually stopped
+			rospy.signal_shutdown("Rosbag playback complete.")
+			cv2.destroyAllWindows()
+		
 
 	def img_callback(self,img_data):
 		try:
@@ -87,7 +102,7 @@ class Dataset_Subscriber:
 
 		# Obtain patch
 		(rows,cols,channels) = cv_image.shape
-		cropped_image = cv_image[rows-self.patch_side:rows, cols/2 - self.patch_side/2:cols/2 + self.patch_side/2]
+		cropped_image = cv_image[rows-self.patch_side:rows, cols//2 - self.patch_side//2:cols//2 + self.patch_side//2]
 
 		# Obtain Odom and IMU data for this instant and append on to a vector
 		odom_data = rospy.wait_for_message(self.odom_topic_name, Odometry, timeout=None)
@@ -122,21 +137,15 @@ class Dataset_Subscriber:
 				# print("Label Vector = ", self.label)
 
 				# Save dataset
-				path = "./labeled_dataset"
-				if not os.path.exists(path):
-					os.mkdir(path)
-				cv2.imwrite(path + "/" + str(self.iter) + ".png", cv_image)
-				np.save(path + "/" + "input_velocity_" + str(self.iter) + ".npy", self.vels)
-				np.save(path + "/" +"label_" + str(self.iter) + ".npy", self.label)
+				cv2.imwrite(self.dataset_path + "/" + str(self.iter) + ".png", cv_image)
+				np.save(self.dataset_path + "/" + "input_velocity_" + str(self.iter) + ".npy", self.vels)
+				np.save(self.dataset_path + "/" +"label_" + str(self.iter) + ".npy", self.label)
 
-
-
-
-		
 		# t2 = time.time()
 		# print("Time to execute one loop of Image callback = ", t2 - self.t1)
-		cv2.imshow("Image window", cropped_image)
-		cv2.waitKey(1)
+		if self.show_images:
+			cv2.imshow("Image window", cropped_image)
+			cv2.waitKey(1)
 
 
 	def gt_callback(self, gt_data):
@@ -177,13 +186,6 @@ class Dataset_Subscriber:
 			self.vels2.append([odom_data.twist.twist.linear.x, odom_data.twist.twist.angular.z])
 			# print("Length of the odom error vector = ", len(self.dist_diff))
 
-			# if (len(self.dist_diff) == 1000):
-			# 	print("Saving Files!")
-			# 	np.save("/home/adarshjs/numpy_files/diff_duration_12/" + self.surface_name + "_vel_diff_12.npy", self.dist_diff)
-			# 	np.save("/home/adarshjs/numpy_files/diff_duration_12/" + self.surface_name + "_yaw_rate_diff_12.npy", self.yaw_diff)
-			# 	np.save("/home/adarshjs/numpy_files/diff_duration_12/" + self.surface_name + "_vel", self.vels2)
-			# 	quit()		
-
 
 	def PCA(self, X , num_components):
 		#Step-1
@@ -207,16 +209,26 @@ class Dataset_Subscriber:
 		X_reduced = np.dot(eigenvector_subset.transpose() , X_meaned.transpose() ).transpose()
 
 		return X_reduced
+	
+	def stop_rosbag(self):
+		self.stop_thread = True
+		self.rosbag_process.terminate()
 		
 
-def main(args):
-	ic = Dataset_Subscriber()
+def main():
+	parser = argparse.ArgumentParser()
+	parser.add_argument('bag_file_path', type=str, help='bag file path')
+	parser.add_argument('--show', action='store_true', help='Show images')
+
+	args = parser.parse_args()
+	ic = Dataset_Subscriber(args.bag_file_path, args.show)
 	rospy.init_node('dataset_subscriber', anonymous=True)
 	try:
 		rospy.spin()
 	except KeyboardInterrupt:
 		print("Shutting down")
+		ic.stop_rosbag()
 	cv2.destroyAllWindows()
 
 if __name__ == '__main__':
-	main(sys.argv)
+	main()
