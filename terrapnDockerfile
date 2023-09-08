@@ -40,7 +40,8 @@ RUN rosdep install --from-paths src --ignore-src -r -y
 RUN .  /opt/ros/melodic/setup.sh && catkin_make 
 
 WORKDIR /opt/terrapn_ws/src/terrapn/conda
-RUN conda env create -f terrapn.yml
+ARG conda_file=terrapn
+RUN conda env create -f $conda_file.yml
 
 RUN conda init
 ENV PYTHONPATH="/opt/terrapn_ws/src/terrapn/model/"
