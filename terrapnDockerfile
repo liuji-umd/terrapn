@@ -41,7 +41,8 @@ RUN git clone https://github.com/liuji-umd/terrapn.git
 
 # create conda env
 WORKDIR /opt/terrapn_ws/src/terrapn/conda
-RUN conda env create -f terrapn.yml
+ARG conda_file=terrapn
+RUN conda env create -f $conda_file.yml
 
 # copy metric calculator
 WORKDIR /opt/terrapn_ws/src

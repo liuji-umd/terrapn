@@ -22,9 +22,13 @@ This is the main working code and model for TerraPN, the paper found here: https
 # To build the docker container
 0. Go to the terrapn package
 1. Please install Nvidia container runtime if it is not already installed [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/nvidia-docker.html)
-2. Run the following command 
+2. Run the following command for RTX 20** GPUs (might work on other GPUs as well)
 ```
-sudo docker build -t terrapn -f terrapnDockerfile .
+sudo docker build -t terrapn --build-arg conda_file=terrapn -f terrapnDockerfile .
+```
+3. Run the following command for a series GPUs
+```
+sudo docker build -t terrapn --build-arg conda_file=terrapn-a -f terrapnDockerfile .
 ```
 
 # To run the docker 
