@@ -17,6 +17,8 @@ RUN locale-gen en_US.UTF-8
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
 RUN rosdep update
 RUN echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
+RUN echo "export ROS_MASTER_URI=http://localhost:11311" >> ~/.bashrc
+RUN echo "ROS_HOSTNAME=localhost" >> ~/.bashrc
 
 RUN apt-get install -y git
 RUN apt-get install wget
