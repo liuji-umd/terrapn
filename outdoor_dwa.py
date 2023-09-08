@@ -35,7 +35,7 @@ import csv
 # from odom_calculator import odom_calulator
 
 # Network related imports
-from model_bn import get_model
+# from model_bn import get_model
 from tqdm import tqdm
 from PIL import Image as im
 from matplotlib import pyplot as plt
