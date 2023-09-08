@@ -18,7 +18,7 @@ ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
 RUN rosdep update
 RUN echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
 RUN echo "export ROS_MASTER_URI=http://localhost:11311" >> ~/.bashrc
-RUN echo "ROS_HOSTNAME=localhost" >> ~/.bashrc
+RUN echo "export ROS_HOSTNAME=localhost" >> ~/.bashrc
 
 RUN apt-get install -y git
 RUN apt-get install wget
@@ -54,9 +54,11 @@ RUN mkdir -p /metric_data
 WORKDIR /opt/terrapn_ws/
 RUN rosdep install --from-paths src --ignore-src -r -y
 RUN .  /opt/ros/melodic/setup.sh && catkin_make 
+RUN echo "source /opt/terrapn_ws/devel/setup.bash" >> ~/.bashrc
 
 # init env
 RUN conda init
+CMD [ "/bin/conda", "run", "-n", "terrapn", "conda", "env", "list" ]
 ENV PYTHONPATH="/opt/terrapn_ws/src/terrapn/model/"
 
 
