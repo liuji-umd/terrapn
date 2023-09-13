@@ -20,10 +20,11 @@ import rospy
 import math
 import numpy as np
 import sys
+import json
 sys.path.remove('/opt/ros/melodic/lib/python2.7/dist-packages')
 import cv2
 sys.path.append('/opt/ros/melodic/lib/python2.7/dist-packages')
-from std_msgs.msg import Float32, Bool
+from std_msgs.msg import Float32, Bool, String
 from geometry_msgs.msg import Twist, PointStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan, Image
@@ -94,17 +95,20 @@ class Config():
         self.z = 0.0
 
         # use preset goal position defined in the trial_param.yaml file
-        self.use_preset_goal = rospy.get_param("/outdoor_dwa/use_preset_goal",False)
-        if self.use_preset_goal:
-            # defined in the trial_param.yaml under the metric_calculator package
-            # this will set the goal xy at the beginning of the trial, so not updated
-            # through the original subscriber callback
-            goal_pos = rospy.get_param("goal_pos",[0.0,0.0])
-            self.goalX = goal_pos[0]
-            self.goalY = goal_pos[1]
-        else:
-            self.goalX = 0
-            self.goalY = 0
+        # self.use_preset_goal = rospy.get_param("/outdoor_dwa/use_preset_goal",False)
+        # if self.use_preset_goal:
+        #     # defined in the trial_param.yaml under the metric_calculator package
+        #     # this will set the goal xy at the beginning of the trial, so not updated
+        #     # through the original subscriber callback
+        #     goal_pos = rospy.get_param("goal_pos",[0.0,0.0])
+        #     self.goalX = goal_pos[0]
+        #     self.goalY = goal_pos[1]
+        # else:
+        #     self.goalX = 0
+        #     self.goalY = 0
+        
+        self.goalX = 0.0
+        self.goalY = 0.0
         self.th = 0.0
         self.r = rospy.Rate(20)
 
@@ -150,6 +154,55 @@ class Config():
 
         self.camera_tilt_angle = -30
 
+        self.new_case = False
+
+        self.reset_sub = rospy.Subscriber("/reset", Bool, self.reset_attributes)
+
+    def reset_attributes(self):
+        self.x = 0.0
+        self.y = 0.0
+        self.z = 0.0
+        self.th = 0.0
+
+        self.iter = 0
+
+        self.cropped_rows=0
+        self.cropped_cols=0
+
+        # Image object
+        self.resized_img = np.zeros((self.num_v*100, self.num_h*100, 3), np.uint8)
+        self.cropped_img = np.zeros((330, 640, 3), np.uint8) #np.zeros((300, 672, 3), np.uint8)
+        self.input_imgs = np.asarray([])
+
+        # Input velocity vector
+        self.vels = []
+        self.input_vel = np.asarray([])
+        self.vel_array_reshaped = np.asarray([])
+
+        self.cropped_list = []
+        self.divided_patch_list = []
+
+        self.new_case = False
+
+    def test_case_cb(self, msg : String):
+        """callback function for "/test_case_info" topic
+        resets the algorithm for the new case
+
+        Args:
+            msg (String): _description_
+
+        Returns:
+            _type_: _description_
+        """
+
+        test_case = json.loads(msg)
+
+        self.reset_attributes()
+
+        self.goalX = test_case["goal pose"]["x"]-test_case["init pose"]["x"]
+        self.goalY = test_case["goal pose"]["y"]-test_case["init pose"]["y"]
+
+        self.new_case = True
 
     # Callback for Odometry
     def assignOdomCoords(self, msg):
@@ -835,6 +888,7 @@ def main():
     subLaser = rospy.Subscriber("/scan", LaserScan, obs.assignObs, config)
     subGoal = rospy.Subscriber('/target/position', Twist, config.target_callback)
     subImage = rospy.Subscriber(config.image_topic_name, Image, config.img_callback)
+    test_case_sub = rospy.Subscriber('/test_case_info',String, config.test_case_cb)
     goal_state_pub = rospy.Publisher('/goal_state_pub', Bool, queue_size=10)
     cost_map_publisher = rospy.Publisher('/terrapn_costmap', Image, queue_size=10)
     publish_cost_map = True
@@ -856,6 +910,14 @@ def main():
 
     # runs until terminated externally
     while not rospy.is_shutdown():
+        if config.new_case is True:
+            # reset x and u
+            # initial state [x(m), y(m), theta(rad), v(m/s), omega(rad/s)]
+            x = np.array([config.x, config.y, config.th, 0.0, 0.0])
+            # initial linear and angular velocities
+            u = np.array([0.0, 0.0])
+
+            config.new_case = False
 
         if (atGoal(config,x,goal_state_pub) == False): # Not reached the goal
             t1 = time.time()
