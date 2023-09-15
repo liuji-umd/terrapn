@@ -195,7 +195,9 @@ class Config():
             _type_: _description_
         """
 
-        test_case = json.loads(msg)
+        # preprocess msg.data
+        jstr = msg.data.replace("\\","") # remove slashes if any
+        test_case = json.loads(jstr)
 
         self.reset_attributes()
 
