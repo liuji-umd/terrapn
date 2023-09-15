@@ -49,6 +49,4 @@ RUN echo "source /opt/terrapn_ws/devel/setup.bash" >> ~/.bashrc
 
 # init env
 RUN conda init
-RUN echo "source activate terrapn" > ~/.bashrc
-ENV PATH /opt/conda/envs/terrapn/bin:$PATH
 ENV PYTHONPATH="/opt/terrapn_ws/src/terrapn/model/"
